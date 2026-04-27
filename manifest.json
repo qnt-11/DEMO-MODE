@@ -1,8 +1,8 @@
 {
-  "name": "famBARLA Demo",
+  "name": "uang famBARLA - Versi Demo",
   "short_name": "famBARLA Demo",
-  "description": "Aplikasi pencatat keuangan famBARLA (Versi Demo)",
-  "start_url": "./index.html",
+  "description": "Aplikasi pencatatan keuangan keluarga (Versi Demo)",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
