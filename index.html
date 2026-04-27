@@ -1305,7 +1305,7 @@
 
     function verifyPin(callback) {
         showPopup('pin', 'Masukkan PIN Keamanan 🔒:', 'var(--danger)', (val) => {
-            if (val === '170823') {
+            if (val === 'admin123') {
                 if (callback) callback();
             } else {
                 showPopup('alert', 'Batal: PIN Salah!', 'var(--danger)');
