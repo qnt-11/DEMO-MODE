@@ -1,10 +1,10 @@
-// Nama cache untuk versi Demo, ubah angka v1 jika nanti ada pembaruan besar
-const CACHE_NAME = 'fambarla-demo-v1.50';
+// Nama cache untuk versi Demo (Ubah angka versi jika nanti ada pembaruan besar)
+const CACHE_NAME = 'fambarla-demo-v1.51';
 
-// Daftar file yang akan disimpan di memori HP (di-cache)
+// Daftar file utama (statis) yang wajib disimpan pertama kali (Pre-caching)
 const urlsToCache = [
   './',
-  './index.html', // Sesuaikan jika nama file HTML-mu berbeda
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
@@ -15,22 +15,22 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('SW: Membuka cache dan menyimpan aset statis...');
+        console.log('SW: Membuka cache dan menyimpan aset utama...');
         return cache.addAll(urlsToCache);
       })
   );
-  // Langsung paksa service worker baru untuk mengambil alih
+  // Langsung paksa service worker baru untuk mengambil alih tanpa menunggu
   self.skipWaiting();
 });
 
-// 2. Event Activate: Terjadi saat service worker aktif, berguna untuk membersihkan cache lama
+// 2. Event Activate: Terjadi saat service worker aktif, bertugas membersihkan cache versi lama
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          // Jika ada cache lama yang namanya tidak ada di whitelist, hapus!
+          // Jika ada cache lama yang namanya tidak ada di daftar, hapus!
           if (cacheWhitelist.indexOf(cacheName) === -1) {
             console.log('SW: Menghapus cache lama', cacheName);
             return caches.delete(cacheName);
@@ -39,30 +39,47 @@ self.addEventListener('activate', event => {
       );
     })
   );
-  // Memastikan SW langsung mengontrol semua halaman yang terbuka
+  // Memastikan SW langsung mengontrol semua halaman yang sedang terbuka
   self.clients.claim();
 });
 
-// 3. Event Fetch: Terjadi setiap kali aplikasi meminta data (loading halaman, gambar, dll)
+// 3. Event Fetch: Dynamic Caching (Membuat aplikasi 100% kebal Offline, termasuk Grafik & Font)
 self.addEventListener('fetch', event => {
+  // Hindari caching request yang bukan GET (seperti ekstensi Chrome atau API POST)
+  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) return;
+
   event.respondWith(
-    // Coba cari data di cache terlebih dahulu
     caches.match(event.request)
       .then(response => {
-        // Jika ditemukan di cache, kembalikan data tersebut (bisa offline)
+        // Jika file sudah ada di cache lokal, langsung gunakan! (Super cepat & hemat kuota)
         if (response) {
           return response;
         }
-        // Jika tidak ada di cache, ambil dari internet (network)
-        return fetch(event.request).catch(() => {
-            // Jika gagal mengambil dari internet (misal: sedang offline) dan tidak ada di cache
-            console.log('SW: Gagal mengambil data, status offline.');
+
+        // Jika tidak ada di cache (misal: Font dari Google atau Chart.js dari CDN), ambil dari internet
+        return fetch(event.request).then(networkResponse => {
+          // Pastikan respons dari internet valid sebelum disimpan ke memori HP
+          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === 'error') {
+            return networkResponse;
+          }
+
+          // Gandakan (clone) respons internet untuk disimpan ke Cache
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+
+          // Berikan respons aslinya ke aplikasi web
+          return networkResponse;
+        }).catch(() => {
+          // Terpicu jika HP benar-benar tidak ada internet dan data belum ada di cache
+          console.log('SW: Anda sedang offline, gagal memuat: ', event.request.url);
         });
       })
   );
 });
 
-// 4. Menerima pesan dari halaman web (contoh: untuk menghapus cache jika user menekan tombol "Hapus Semua Data")
+// 4. Event Message: Menerima pesan dari aplikasi web (Klik "Hapus Semua Data")
 self.addEventListener('message', event => {
   if (event.data && event.data.action === 'CLEAR_CACHE') {
     caches.keys().then(cacheNames => {
