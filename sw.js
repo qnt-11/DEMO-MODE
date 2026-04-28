@@ -1,5 +1,5 @@
 // Nama cache untuk versi Demo (Ubah angka versi jika nanti ada pembaruan besar)
-const CACHE_NAME = 'fambarla-demo-v1.51';
+const CACHE_NAME = 'fambarla-demo-v2.3';
 
 // Daftar file utama (statis) yang wajib disimpan pertama kali (Pre-caching)
 const urlsToCache = [
