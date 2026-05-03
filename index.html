@@ -1349,7 +1349,7 @@
 
     function verifyPin(callback, onCancelOrFail) {
         showPopup('pin', 'Masukkan PIN Keamanan 🔒:', 'var(--danger)', (val) => {
-            if (val === '170823') { if (callback) callback(); } 
+            if (val === '123456') { if (callback) callback(); } 
             else { showPopup('alert', 'Batal: PIN Salah!', 'var(--danger)'); if (onCancelOrFail) onCancelOrFail(); }
         });
         const btnBatal = document.getElementById('modal-btn-cancel'); const originalClick = btnBatal.onclick;
